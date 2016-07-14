@@ -1,0 +1,12 @@
+[package]
+name = "pong"
+version = "0.1.0"
+authors = ["Sean Wilson <spwilson27@gmail.com>"]
+
+[features]
+default = ["menu"]
+menu = []
+
+[dependencies.ncurses]
+git = "https://github.com/jeaye/ncurses-rs"
+features = ["menu"]
