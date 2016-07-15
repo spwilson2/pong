@@ -1,10 +1,19 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::collections::VecDeque;
+use std::i32::MAX as I32MAX;
+use std::i32::MIN as I32MIN;
 
 pub type Id = u32;
 pub type Collision = (Id, Id);
-pub type Line = (u32, u32);
+pub type Line = (i32, i32);
+
+const MASS_DRAG: u32 = 1;
+
+// The different amount of velocity applied per difference in mass.
+const MASS_DIF_VEL: u32 = 1;
+//const I32MIN :i32 = std::i32::MIN;
+//const I32MAX :i32 = std::i32::MAX;
 
 struct CollisionLines {
     x_line: Line,
@@ -12,10 +21,10 @@ struct CollisionLines {
 }
 
 struct CollisionBox {
-    xmin: u32,
-    ymin: u32,
-    xmax: u32,
-    ymax: u32,
+    xmin: i32,
+    ymin: i32,
+    xmax: i32,
+    ymax: i32,
 }
 
 #[derive(Debug)]
@@ -31,14 +40,14 @@ struct Plane {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 struct Coords {
-    x: u32,
-    y: u32
+    x: i32,
+    y: i32
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 struct Velocity {
-    x: u32,
-    y: u32,
+    x: i32,
+    y: i32,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -55,8 +64,8 @@ enum Mass {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 struct Object {
-    width: u32,
-    height: u32,
+    width: i32,
+    height: i32,
     coords: Coords,
     movement: Movement,
     mass: Mass,
@@ -110,7 +119,14 @@ impl Plane {
         for collision in collisions {
             self.execute_collisions();
         }
+        
+        self.update_objects_physics();
+    }
 
+    fn update_objects_physics(&mut self) {
+        for object in self.objects.values_mut() {
+            object.update_physics();
+        }
     }
 
     fn detect_collisions(&self) -> Vec<Collision> {
@@ -152,7 +168,7 @@ impl Plane {
 }
 
 impl Object {
-    pub fn new_wall(width: u32, height: u32, x: u32, y: u32) -> Self{
+    pub fn new_wall(width: i32, height: i32, x: i32, y: i32) -> Self{
         Object {
             height: height,
             width: width,
@@ -195,6 +211,42 @@ impl Object {
 
     fn collide (&mut self, other: &Self) {
         if self.is_collidable && !self.is_rigid{
+        }
+    }
+
+    fn update_physics(&mut self) {
+
+        // Ignore rigid movement types, they must be moved by function/field access.
+        let velocity = match self.movement {
+            Movement::Rigid => return,
+            Movement::Fluid {velocity: ref mut velocity} => velocity,
+        };
+
+        let mut x_vel = velocity.x;
+        let mut y_vel = velocity.y;
+
+        apply_velocity(&mut self.coords.x, x_vel);
+        apply_velocity(&mut self.coords.y, y_vel);
+
+        let mass = match self.mass {
+            Mass::Massful(mass) => mass,
+            Mass::Massless =>      0,
+        };
+
+        //// Decrease x and y velocity by mass * drag.
+        //x_vel = x_vel - (mass * MASS_DRAG);
+        //y_vel = y_vel - (mass * MASS_DRAG);
+
+        //self.movement.velocity = Velocity {x:new_x_vel, y:new_y_vel};
+    }
+}
+
+fn apply_velocity(mut coord: &mut i32, vel: i32) {
+    *coord = match vel >= 0 {
+        true => coord.checked_add(vel).unwrap_or(I32MAX),
+        false => match coord.checked_add(vel) {
+            Some(coord) => coord,
+            None        => I32MIN,
         }
     }
 }
