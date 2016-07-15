@@ -64,7 +64,7 @@ impl MainMenu {
     pub fn interact_loop(&mut self) {
         //let ref KEY_F1 = KEY_F(1);
         loop {
-            let mut ch = getch();
+            let ch = getch();
             match ch {
                 KEY_F1 => break,
 
