@@ -21,7 +21,7 @@ fn main()
 
 //#[cfg(test)]
 //#[test]
-//fn main() {
+//fn main_menu() {
 //    use std::thread;
 //    use std::time::Duration;
 //    {

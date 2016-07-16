@@ -9,6 +9,7 @@ pub type Collision = (Id, Id);
 pub type Line = (i32, i32);
 
 const MASS_DRAG: u32 = 1;
+const MASS_MAX: u32  = I32MAX as u32;
 
 // The different amount of velocity applied per difference in mass.
 const MASS_DIF_VEL: u32 = 1;
@@ -195,8 +196,8 @@ impl Object {
     }
 
     fn line_collision(line_1: Line, line_2: Line) -> bool {
-        if (line_1.0 < line_2.0) && 
-           (line_1.1 > line_2.1) {
+        if (line_1.0 <= line_2.0) && 
+           (line_1.1 >= line_2.1) {
                return true;
         }
         false
@@ -222,24 +223,49 @@ impl Object {
             Movement::Fluid {velocity: ref mut velocity} => velocity,
         };
 
-        let mut x_vel = velocity.x;
-        let mut y_vel = velocity.y;
+        let ref mut x_vel = velocity.x;
+        let ref mut y_vel = velocity.y;
 
-        apply_velocity(&mut self.coords.x, x_vel);
-        apply_velocity(&mut self.coords.y, y_vel);
+        // Skip further calculations if no velocity exists.
+        if (*x_vel == 0) && (*y_vel == 0) {return}
+
+        apply_velocity(&mut self.coords.x, *x_vel);
+        apply_velocity(&mut self.coords.y, *y_vel);
 
         let mass = match self.mass {
             Mass::Massful(mass) => mass,
             Mass::Massless =>      0,
         };
 
-        //// Decrease x and y velocity by mass * drag.
-        //x_vel = x_vel - (mass * MASS_DRAG);
-        //y_vel = y_vel - (mass * MASS_DRAG);
+        apply_drag(x_vel, mass);
+        apply_drag(x_vel, mass);
 
-        //self.movement.velocity = Velocity {x:new_x_vel, y:new_y_vel};
     }
 }
+
+fn apply_drag(mut vel: &mut i32, mass: u32) {
+
+    let vel_sign = match (*vel) > 0 {
+        true => 1,
+        false => -1,
+    };
+
+    assert!(mass <= MASS_MAX);
+
+    // Drag is in the opposite direction of velocity.
+    let drag = (mass as i32).checked_mul(MASS_DRAG as i32).unwrap_or(I32MAX);
+    
+    // Magnitude is unsigned.
+    let old_magnitude = (*vel) * vel_sign;
+
+    (*vel) = vel_sign * old_magnitude.checked_sub(drag).unwrap_or(0);
+
+    (*vel) = match (*vel <= 0) {
+        true => 0,
+        false => *vel
+    };
+}
+
 
 fn apply_velocity(mut coord: &mut i32, vel: i32) {
     *coord = match vel >= 0 {
@@ -249,6 +275,27 @@ fn apply_velocity(mut coord: &mut i32, vel: i32) {
             None        => I32MIN,
         }
     }
+}
+
+#[test]
+pub fn test_apply_drag_drags_to_zero() {
+    let mut i = 2;
+    apply_drag(&mut i, MASS_MAX);
+    assert_eq!(i, 0);
+}
+
+#[test]
+pub fn test_apply_velocity_doesnt_overflow_coord() {
+    let mut coord = I32MAX;
+    apply_velocity(&mut coord, 500);
+    assert!(coord >= 0);
+}
+
+#[test]
+pub fn test_apply_velocity_maxes_out() {
+    let mut coord = I32MAX;
+    apply_velocity(&mut coord, I32MAX);
+    assert_eq!(coord, I32MAX);
 }
 
 #[cfg(test)]
@@ -276,4 +323,26 @@ pub fn test_drop_object_from_plane() {
     plane.drop_object(obj_id);
 
     assert_eq!(wall_clone, wall);
+}
+
+#[test]
+pub fn test_plane_detects_overlapping_walls() {
+
+    let mut plane = Plane::new();
+    let mut wall_1 = Object::new_wall(1,1,0,0);
+    let mut wall_2 = Object::new_wall(1,1,0,0);
+
+    let id_1 = plane.attach_object(wall_1);
+    let id_2 = plane.attach_object(wall_2);
+
+    assert_eq!(plane.detect_collisions().len(), 1);
+
+    // Recieve walls back as a collision, order of detection 
+    // doesn't matter.
+    let collision_success = match plane.detect_collisions()[0] {
+        (col_id_1, col_id_2) if (col_id_1 == id_1) && (col_id_2 == id_2) => true,
+        (col_id_2, col_id_1) if (col_id_1 == id_1) && (col_id_2 == id_2) => true,
+        _ => false,
+    };
+    assert!(collision_success);
 }
