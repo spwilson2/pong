@@ -3,6 +3,7 @@
 #![allow(dead_code)]
 extern crate ncurses;
 mod ui;
+mod game;
 mod physics;
 use ui::menu;
 

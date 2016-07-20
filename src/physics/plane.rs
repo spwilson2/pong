@@ -29,7 +29,7 @@ struct CollisionBox {
 }
 
 #[derive(Debug)]
-struct Plane {
+pub struct Plane {
     objects: HashMap<Id, Box<Object>>,
 
     // Save time by not indexing the hashmap for 
@@ -40,9 +40,9 @@ struct Plane {
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-struct Coords {
-    x: i32,
-    y: i32
+pub struct Coords {
+    pub x: i32,
+    pub y: i32
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -52,26 +52,26 @@ struct Velocity {
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum Movement {
+pub enum Movement {
     Fluid {velocity: Velocity},
     Rigid,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-enum Mass {
+pub enum Mass {
     Massful(u32),
     Massless,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
-struct Object {
-    width: i32,
-    height: i32,
-    coords: Coords,
-    movement: Movement,
-    mass: Mass,
-    is_collidable: bool,
-    is_rigid: bool,
+pub struct Object {
+    pub width: i32,
+    pub height: i32,
+    pub coords: Coords,
+    pub movement: Movement,
+    pub mass: Mass,
+    pub is_collidable: bool,
+    pub is_rigid: bool,
 }
 
 impl Plane {

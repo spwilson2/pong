@@ -7,6 +7,9 @@ authors = ["Sean Wilson <spwilson27@gmail.com>"]
 default = ["menu"]
 menu = []
 
+[dependencies]
+websocket = "0.17.1"
+
 [dependencies.ncurses]
 git = "https://github.com/jeaye/ncurses-rs"
 features = ["menu"]
